@@ -3,9 +3,11 @@ from rest_framework.authtoken.models import Token
 from rest_framework.generics import CreateAPIView, UpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_504_GATEWAY_TIMEOUT
 from rest_framework.views import APIView
 
+from apps.services.exceptions import EmailValidationTimeoutException
+from apps.users.constants import EMAIL_TIME_OUT_MSG
 from apps.users.serializers import SignInSerializer, SignUpSerializer, UpdatePasswordSerializer
 from apps.users.permissions import IsUnAuthenticated, IsUserThemselves
 
@@ -13,6 +15,12 @@ from apps.users.permissions import IsUnAuthenticated, IsUserThemselves
 class SignUpView(CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = SignUpSerializer
+
+    def post(self, request, *args, **kwargs):
+        try:
+            return self.create(request, *args, **kwargs)
+        except EmailValidationTimeoutException:
+            return Response(EMAIL_TIME_OUT_MSG, status=HTTP_504_GATEWAY_TIMEOUT)
 
 
 class SignInView(APIView):

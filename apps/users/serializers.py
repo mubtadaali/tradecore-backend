@@ -4,6 +4,12 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from apps.services.abstractapi import is_email_deliverable
+from apps.users.constants import (
+    INACTIVE_USER_ERR_MSG, LOGIN_CRED_ERR_MSG,
+    INVALID_EXISTING_PASSWORD_ERR_MSG, EMAIL_NOT_DELIVERABLE_ERR_MSG
+)
+
 
 class SignUpSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
@@ -16,6 +22,11 @@ class SignUpSerializer(serializers.ModelSerializer):
             'first_name': {'required': True},
             'last_name': {'required': True}
         }
+
+    def validate_email(self, value):
+        if is_email_deliverable(value):
+            return value
+        raise serializers.ValidationError(EMAIL_NOT_DELIVERABLE_ERR_MSG)
 
     def create(self, validated_data):
         user = User.objects.create(
@@ -36,9 +47,9 @@ class SignInSerializer(serializers.Serializer):
     def validate(self, attrs):
         user = authenticate(username=attrs['username'], password=attrs['password'])
         if user is None:
-            raise serializers.ValidationError('Unable to log in with provided credentials.')
+            raise serializers.ValidationError(LOGIN_CRED_ERR_MSG)
         if not user.is_active:
-            raise serializers.ValidationError('Cannot log in as inactive user')
+            raise serializers.ValidationError(INACTIVE_USER_ERR_MSG)
 
         self.instance = user
         return attrs
@@ -50,7 +61,7 @@ class UpdatePasswordSerializer(serializers.Serializer):
 
     def validate_old_password(self, value):
         if not self.instance.check_password(value):
-            raise serializers.ValidationError('Invalid existing password.')
+            raise serializers.ValidationError(INVALID_EXISTING_PASSWORD_ERR_MSG)
         return value
 
     def update(self, instance, validated_data):
