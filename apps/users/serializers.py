@@ -1,14 +1,10 @@
-from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from apps.services.abstractapi import is_email_deliverable
-from apps.users.constants import (
-    INACTIVE_USER_ERR_MSG, LOGIN_CRED_ERR_MSG,
-    INVALID_EXISTING_PASSWORD_ERR_MSG, EMAIL_NOT_DELIVERABLE_ERR_MSG
-)
+from apps.users.constants import INVALID_EXISTING_PASSWORD_ERR_MSG, EMAIL_NOT_DELIVERABLE_ERR_MSG
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -40,19 +36,11 @@ class SignUpSerializer(serializers.ModelSerializer):
         return user
 
 
-class SignInSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, style={'input_type': 'password'})
-
-    def validate(self, attrs):
-        user = authenticate(username=attrs['username'], password=attrs['password'])
-        if user is None:
-            raise serializers.ValidationError(LOGIN_CRED_ERR_MSG)
-        if not user.is_active:
-            raise serializers.ValidationError(INACTIVE_USER_ERR_MSG)
-
-        self.instance = user
-        return attrs
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'first_name', 'last_name', 'username', 'email', 'is_active')
+        read_only_fields = ['id']
 
 
 class UpdatePasswordSerializer(serializers.Serializer):
@@ -67,8 +55,8 @@ class UpdatePasswordSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         instance.set_password(validated_data['new_password'])
         instance.save(update_fields=['password'])
-
-        if hasattr(instance, 'auth_token'):
-            instance.auth_token.delete()
-
         return instance
+
+    @property
+    def data(self):
+        return 'Password Updated Successfully!'

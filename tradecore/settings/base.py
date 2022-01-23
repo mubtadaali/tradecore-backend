@@ -41,7 +41,7 @@ DJANGO_DEFAULT_APPS = [
 
 THIRD_PARTY_APPS = [
     'rest_framework',
-    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
 ]
 
 LOCAL_APPS = [
@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'tradecore.wsgi.application'
 # Django Rest Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
 }
 

@@ -1,55 +1,58 @@
 from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
-from rest_framework.generics import CreateAPIView, UpdateAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_504_GATEWAY_TIMEOUT
-from rest_framework.views import APIView
+from rest_framework.status import HTTP_503_SERVICE_UNAVAILABLE
+from rest_framework.viewsets import ModelViewSet
 
 from apps.services.exceptions import EmailValidationTimeoutException
 from apps.users.constants import EMAIL_TIME_OUT_MSG
-from apps.users.serializers import SignInSerializer, SignUpSerializer, UpdatePasswordSerializer
-from apps.users.permissions import IsUnAuthenticated, IsUserThemselves
+from apps.users.serializers import SignUpSerializer, UpdatePasswordSerializer, UserSerializer
+from apps.users.permissions import IsAdminOrIsSelf
 
 
-class SignUpView(CreateAPIView):
-    permission_classes = (AllowAny,)
-    serializer_class = SignUpSerializer
-
-    def post(self, request, *args, **kwargs):
-        try:
-            return self.create(request, *args, **kwargs)
-        except EmailValidationTimeoutException:
-            return Response(EMAIL_TIME_OUT_MSG, status=HTTP_504_GATEWAY_TIMEOUT)
-
-
-class SignInView(APIView):
-    permission_classes = (IsUnAuthenticated, )
-
-    def post(self, request):
-        serializer = SignInSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        token, _ = Token.objects.get_or_create(user=serializer.instance)
-        return Response({'token': token.key}, status=HTTP_200_OK)
-
-
-class SignOutView(APIView):
+class UserViewSet(ModelViewSet):
+    """
+    A viewset that provides the standard actions for user
+    """
+    filter_backends = [SearchFilter, OrderingFilter]
     permission_classes = (IsAuthenticated, )
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    queryset = User.objects.filter(is_active=True)
+    ordering_fields = ['id', 'username', 'email']
+    ordering = ['-id']
 
-    def post(self, request):
-        request.user.auth_token.delete()
-        return Response('User Logged out successfully', status=HTTP_200_OK)
+    def get_permissions(self):
+        permission_classes = self.permission_classes
 
+        if self.action == 'create':
+            permission_classes = [AllowAny]
+        elif self.action == ['update', 'partial_update', 'update_password']:
+            permission_classes = [IsAdminOrIsSelf]
+        elif self.action == ['destroy']:
+            permission_classes = [IsAdminUser]
 
-class UpdatePassword(UpdateAPIView):
-    model = User
-    queryset = User.objects.all()
-    serializer_class = UpdatePasswordSerializer
-    permission_classes = (IsAuthenticated, IsUserThemselves)
+        return [permission() for permission in permission_classes]
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response('Password Updated Successfully!', status=HTTP_200_OK)
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return SignUpSerializer
+        elif self.action == 'update_password':
+            return UpdatePasswordSerializer
+
+        return UserSerializer
+
+    @action(detail=True, methods=['patch'])
+    def update_password(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except EmailValidationTimeoutException:
+            return Response(EMAIL_TIME_OUT_MSG, status=HTTP_503_SERVICE_UNAVAILABLE)
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])

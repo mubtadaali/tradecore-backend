@@ -1,13 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class IsUnAuthenticated(BasePermission):
-    message = 'User is already logged-in.'
-
-    def has_permission(self, request, view):
-        return not request.user.is_authenticated
-
-
 class IsAuthorOrReadOnly(BasePermission):
     """
     Object-level permission to only allow author to edit only their posts.
@@ -20,10 +13,10 @@ class IsAuthorOrReadOnly(BasePermission):
         return obj.author == request.user
 
 
-class IsUserThemselves(BasePermission):
+class IsAdminOrIsSelf(BasePermission):
     """
     Object-level permission to only allow user to edit only their data.
     """
 
     def has_object_permission(self, request, view, obj):
-        return obj == request.user
+        return request.user.is_staff or (obj == request.user)
