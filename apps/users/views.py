@@ -7,9 +7,11 @@ from rest_framework.status import HTTP_503_SERVICE_UNAVAILABLE
 from rest_framework.viewsets import ModelViewSet
 
 from apps.services.exceptions import EmailValidationTimeoutException
+from apps.services.utils import get_user_ip_address
 from apps.users.constants import EMAIL_TIME_OUT_MSG
 from apps.users.serializers import SignUpSerializer, UpdatePasswordSerializer, UserSerializer
 from apps.users.permissions import IsAdminOrIsSelf
+from apps.users.tasks import add_user_geolocation_data
 
 
 class UserViewSet(ModelViewSet):
@@ -49,7 +51,10 @@ class UserViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            return super().create(request, *args, **kwargs)
+            response = super().create(request, *args, **kwargs)
+            user_ip_address = get_user_ip_address(request)
+            add_user_geolocation_data.delay(user_ip_address, request.data['username'])
+            return response
         except EmailValidationTimeoutException:
             return Response(EMAIL_TIME_OUT_MSG, status=HTTP_503_SERVICE_UNAVAILABLE)
 
