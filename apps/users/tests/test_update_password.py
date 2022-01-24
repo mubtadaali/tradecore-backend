@@ -14,6 +14,9 @@ class UserLoginTestCase(TestCase):
         self.user = User.objects.create_user(username='rach', email='rach@friends.com', password='1234')
         self.url = f'/api/users/{self.user.id}/update_password/'
 
+        self.user_fail = User.objects.create_user(username='rachel', email='rach@friends.com', password='test1234')
+        self.url_fail = f'/api/users/{self.user_fail.id}/update_password/'
+
     def test_update_password_not_authorized_failure(self):
         client = APIClient()
         response = client.patch(
@@ -23,11 +26,11 @@ class UserLoginTestCase(TestCase):
 
     def test_update_password_failure(self):
         client = APIClient()
-        response = client.post(reverse('token_obtain_pair'), json.dumps({'username': 'rach', 'password': '1234'}),
+        response = client.post(reverse('token_obtain_pair'), json.dumps({'username': 'rachel', 'password': 'test1234'}),
                                content_type='application/json')
         client.credentials(HTTP_AUTHORIZATION='Bearer ' + response.json()['access'])
         response = client.patch(
-            self.url, json.dumps({'old_password': 'abcd', 'new_password': 'test1234abc'}),
+            self.url_fail, json.dumps({'old_password': 'hello', 'new_password': 'test1234abc'}),
             content_type='application/json'
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
