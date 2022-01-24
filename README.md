@@ -5,7 +5,7 @@ A social application where people can share their thoughts via posts and other p
 that by liking and unliking the post.
 
 
-### Basic Requirements
+### Pre Requirements
   * Python 3.10.0
   * PostgreSQL 14.1
 
@@ -52,3 +52,24 @@ Run the python server
 ```
 python manage.py runserver
 ```
+
+### Install Redis as a Celery Broker
+install Redis from the official download page https://redis.io/download or via brew `brew install redis`
+
+#### Start the redis server
+run this command: `redis-server`
+
+You can test that Redis is working properly by typing this into your terminal: `redis-cli ping`
+
+#### Start the worker
+
+celery -A tradecore worker -l info
+
+### Run the tests
+```
+python manage.py test
+```
+
+### REST APIs
+Import the API collection file `tradecore.postman_collection.json` in 
+the postman application to have a detailed look.
