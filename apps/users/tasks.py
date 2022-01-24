@@ -5,7 +5,7 @@ from requests import ConnectTimeout
 from apps.users.models import Profile
 from tradecore.celery import app
 
-from apps.services.abstractapi import retrieve_geo_location_data, retrieve_holiday_information
+from services.abstractapi import retrieve_geo_location_data, retrieve_holiday_information
 
 
 @app.task(bind=True)

@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_503_SERVICE_UNAVAILABLE
 from rest_framework.viewsets import ModelViewSet
 
-from apps.services.exceptions import EmailValidationTimeoutException
-from apps.services.utils import get_user_ip_address
+from services.exceptions import EmailValidationTimeoutException
+from services.utils import get_user_ip_address
 from apps.users.constants import EMAIL_TIME_OUT_MSG
 from apps.users.serializers import SignUpSerializer, UpdatePasswordSerializer, UserSerializer
 from apps.users.permissions import IsAdminOrIsSelf

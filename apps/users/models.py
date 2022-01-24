@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.db import models
 
+from common.mixins import CreateUpdateModelMixin
 
-class Profile(models.Model):
+
+class Profile(CreateUpdateModelMixin):
     city = models.CharField(max_length=48, null=True, blank=True)
     region = models.CharField(max_length=48, null=True, blank=True)
     postal_code = models.CharField(max_length=5, null=True, blank=True)

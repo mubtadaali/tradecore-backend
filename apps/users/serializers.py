@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from apps.services.abstractapi import is_email_deliverable
+from services.abstractapi import is_email_deliverable
 from apps.users.constants import INVALID_EXISTING_PASSWORD_ERR_MSG, EMAIL_NOT_DELIVERABLE_ERR_MSG
 
 

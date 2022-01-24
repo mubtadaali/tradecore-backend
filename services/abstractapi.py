@@ -1,8 +1,8 @@
 import requests
 from django.conf import settings
 
-from apps.services.exceptions import EmailValidationTimeoutException
-from apps.services.utils import requests_retry_session
+from services.exceptions import EmailValidationTimeoutException
+from services.utils import requests_retry_session
 
 BASE_URL_T = 'https://{}.abstractapi.com/v1'
 
